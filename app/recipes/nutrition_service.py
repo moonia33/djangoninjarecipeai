@@ -7,7 +7,7 @@ from typing import Any, Literal
 from django.conf import settings
 from django.utils import timezone
 from openai import OpenAI
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from recipes.models import Recipe, RecipeIngredient, RecipeNutritionJob
 
@@ -55,6 +55,22 @@ class NutritionResult(BaseModel):
     allergens: list[Allergen] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
     disclaimer: str
+
+    @field_validator("allergens", mode="before")
+    @classmethod
+    def _normalize_allergens(cls, value):
+        if value is None:
+            return []
+        if isinstance(value, list):
+            return [str(item).strip() for item in value if str(item).strip()]
+        if isinstance(value, dict):
+            # Accept {'gluten': true, ...} and convert to ['gluten', ...]
+            items: list[str] = []
+            for key, enabled in value.items():
+                if enabled:
+                    items.append(str(key).strip())
+            return items
+        return value
 
 
 @dataclass(frozen=True)
