@@ -2,6 +2,17 @@
 
 Projektas naudoja **Django 5 + Django Ninja** ir ekspozuoja JSON API, kurią vartoja būsimasis Svelte/SPA frontendas. Šis dokumentas aprašo, kaip paleisti backendą, kokius endpointus turime, kokie laukų formatai, kokių saugumo reikalavimų laikytis ir kokia automatika (el. laiškai, vaizdai) vykdoma užkulisiuose.
 
+## Darbo eiga (sutarta)
+
+Kad nekauptume „neaiškių“ pokyčių ir frontendui visada būtų aišku kas pasikeitė, laikomės tokios taisyklės:
+
+1. Padarom pakeitimą kode.
+2. Patikrinam, kad veikia (bent: `poetry run python manage.py check` + migracijos jei buvo modelių pokyčių).
+3. Iškart papildom šitą README (API laukai, endpointai, changelog, pavyzdžiai).
+4. Iškart darom `git commit` ir `git push`.
+
+Pastaba: `.env`, `.venv`, `staticfiles/` į git nekeliam.
+
 ## 1. Paleidimas ir aplinka
 
 1. Įsidiek Poetry priklausomybes:
