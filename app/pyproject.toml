@@ -21,7 +21,8 @@ dependencies = [
     "django-filter (>=24.3,<25.0)",
     "pydantic (>=2.9,<3.0)",
     "django-cors-headers (>=4.4,<5.0)",
-    "python-slugify (>=8.0.4,<9.0.0)"
+    "python-slugify (>=8.0.4,<9.0.0)",
+    "openai (>=1.0,<2.0)"
 ]
 
 [tool.poetry]

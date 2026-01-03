@@ -326,7 +326,15 @@ Komanda, kuri sukuria job'us (pvz. cron'ui arba vėliau Celery beat):
 poetry run python manage.py enqueue_recipe_nutrition_jobs --limit=200
 ```
 
-Pastaba: šiuo metu ši komanda tik sukuria job'us (eilę). Pats job'ų apdorojimas (OpenAI užklausos, įskaitant Batch API) bus implementuotas atskirai.
+Komanda, kuri apdoroja job'us ir užpildo `Recipe.nutrition` (pirmai iteracijai – tiesiogiai per OpenAI, be Batch):
+
+```bash
+poetry run python manage.py process_recipe_nutrition_jobs --limit=20
+```
+
+Nutrition JSON grąžina apytikslę maistinę vertę per porciją ir EU14 alergenus. Rekomenduojama UI visada rodyti, kad tai yra apytikslės reikšmės.
+
+Pastaba: Batch API režimą (dideliam kiekiui per naktį) pridėsim atskirai; šiuo metu apdorojimas vyksta tiesiogiai per OpenAI kiekvienam job'ui.
 
 ## 11. Greta esantys moduliai
 
