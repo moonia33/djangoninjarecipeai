@@ -1,0 +1,30 @@
+# Python / Django
+__pycache__/
+*.py[cod]
+*.sqlite3
+
+# Virtualenv
+.venv/
+venv/
+app/.venv/
+
+# Environment / secrets
+.env
+.env.*
+app/.env
+app/.env.*
+
+# Pytest
+.pytest_cache/
+app/.pytest_cache/
+
+# Django collected static
+staticfiles/
+app/staticfiles/
+
+# Node / frontend (if any)
+node_modules/
+
+# OS / editor
+.DS_Store
+.vscode/

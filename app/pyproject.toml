@@ -1,0 +1,70 @@
+[project]
+name = "recipe-backend"
+version = "0.1.0"
+description = "Recipe platform backend"
+authors = [
+    {name = "Ramūnas",email = "ramunas@inultimo.lt"}
+]
+readme = "README.md"
+requires-python = "^3.12"
+dependencies = [
+    "django (>=5.1,<6.0)",
+    "django-ninja (>=1.3,<2.0)",
+    "django-storages (>=1.14,<2.0)",
+    "boto3 (>=1.35,<2.0)",
+    "django-imagekit (>=5.0,<6.0)",
+    "django-ckeditor (>=6.7,<7.0)",
+    "pillow (>=11.0,<12.0)",
+    "django-environ (>=0.11,<0.12)",
+    "psycopg[binary] (>=3.2,<4.0)",
+    "django-tree-queries (>=0.21,<0.22)",
+    "django-filter (>=24.3,<25.0)",
+    "pydantic (>=2.9,<3.0)",
+    "django-cors-headers (>=4.4,<5.0)",
+    "python-slugify (>=8.0.4,<9.0.0)"
+]
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3"
+pytest-django = "^4.8"
+model-bakery = "^1.20"
+ruff = "^0.7"
+black = "^24.8"
+mypy = "^1.11"
+django-stubs = {version = "^5.1", extras = ["compatible-mypy"]}
+
+[tool.black]
+line-length = 100
+target-version = ["py313"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["recipe_platform", "recipes"]
+exclude = [
+    "**/migrations/**",
+    ".venv",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "DJ", "N", "W"]
+
+[tool.mypy]
+python_version = "3.13"
+warn_unused_configs = true
+plugins = ["mypy_django_plugin.main"]
+ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "recipe_platform.settings"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "recipe_platform.settings"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

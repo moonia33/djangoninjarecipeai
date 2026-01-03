@@ -1,0 +1,17 @@
+/* Layout-only tweaks to make EasyMDE fill Django admin width */
+
+.form-row .EasyMDEContainer {
+    max-width: none;
+    width: 100%;
+}
+
+.form-row .editor-toolbar,
+.form-row .CodeMirror,
+.form-row .CodeMirror-scroll {
+    width: 100% !important;
+}
+
+/* Avoid textarea shrinking inside stacked inlines */
+.inline-related textarea[data-md-editor="true"] {
+    width: 100%;
+}
