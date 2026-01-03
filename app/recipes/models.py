@@ -1,5 +1,6 @@
 """Domeno modeliai receptų platformai."""
 
+import hashlib
 from uuid import uuid4
 
 from django.conf import settings
@@ -176,6 +177,12 @@ class Recipe(TimeStampedModel):
     description = models.TextField(blank=True)
     note = models.TextField(blank=True)
     is_generated = models.BooleanField(default=False)
+
+    nutrition = models.JSONField(null=True, blank=True)
+    nutrition_updated_at = models.DateTimeField(null=True, blank=True)
+    nutrition_input_hash = models.CharField(max_length=64, blank=True, default="")
+    nutrition_dirty = models.BooleanField(default=True)
+    nutrition_last_enqueued_at = models.DateTimeField(null=True, blank=True)
     preparation_time = models.PositiveIntegerField(
         help_text="Minutės pasiruošimui")
     cooking_time = models.PositiveIntegerField(help_text="Minutės gaminimui")
@@ -265,17 +272,29 @@ class Recipe(TimeStampedModel):
     def save(self, *args, **kwargs):
         update_fields = kwargs.get("update_fields")
         image_changed = False
+        servings_changed = False
         if self.pk is None:
             image_changed = bool(self.image)
         else:
-            if update_fields is not None and "image" not in update_fields:
-                image_changed = False
-            else:
-                previous_image_name = (
-                    Recipe.objects.filter(pk=self.pk).values_list("image", flat=True).first()
-                )
+            needs_previous = update_fields is None or "image" in update_fields or "servings" in update_fields
+            previous = (
+                Recipe.objects.filter(pk=self.pk).values("image", "servings").first()
+                if needs_previous
+                else None
+            )
+
+            if update_fields is None or "image" in update_fields:
+                previous_image_name = previous.get("image") if previous else None
                 current_image_name = getattr(self.image, "name", None) if self.image else None
                 image_changed = previous_image_name != current_image_name
+            else:
+                image_changed = False
+
+            if update_fields is None or "servings" in update_fields:
+                previous_servings = previous.get("servings") if previous else None
+                servings_changed = previous_servings != self.servings
+            else:
+                servings_changed = False
 
         if not self.slug:
             self.slug = _generate_unique_slug(self, self.title)
@@ -284,6 +303,8 @@ class Recipe(TimeStampedModel):
         super().save(*args, **kwargs)
         if image_changed:
             self._generate_image_variants()
+        if servings_changed:
+            Recipe.objects.filter(pk=self.pk).update(nutrition_dirty=True)
 
     def __str__(self) -> str:  # pragma: no cover
         return self.title
@@ -488,3 +509,61 @@ class Comment(TimeStampedModel):
 
     def __str__(self) -> str:  # pragma: no cover
         return f"Komentaras #{self.pk}"
+
+
+class RecipeNutritionJobStatus(models.TextChoices):
+    QUEUED = "queued", "Eilėje"
+    RUNNING = "running", "Vykdoma"
+    SUCCEEDED = "succeeded", "Pavyko"
+    FAILED = "failed", "Nepavyko"
+
+
+class RecipeNutritionJob(TimeStampedModel):
+    """Asinchroninis nutrition informacijos generavimo job'as."""
+
+    recipe = models.ForeignKey(
+        Recipe,
+        related_name="nutrition_jobs",
+        on_delete=models.CASCADE,
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=RecipeNutritionJobStatus.choices,
+        default=RecipeNutritionJobStatus.QUEUED,
+    )
+    input_hash = models.CharField(max_length=64)
+    result = models.JSONField(null=True, blank=True)
+    error = models.TextField(blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "created_at"]),
+            models.Index(fields=["recipe", "status", "created_at"]),
+        ]
+
+    @staticmethod
+    def compute_input_hash(*, servings: int, ingredient_rows: list[tuple]) -> str:
+        """Sugeneruoja stabilų SHA256 hash'ą pagal porcijas ir ingredientų eilutes.
+
+        `ingredient_rows` tikimasi kaip list of tuples:
+        (ingredient_id, group_id, unit_id, amount, note)
+        """
+
+        parts: list[str] = [f"servings={servings}"]
+        for ingredient_id, group_id, unit_id, amount, note in ingredient_rows:
+            parts.append(
+                "|".join(
+                    [
+                        str(ingredient_id),
+                        str(group_id or ""),
+                        str(unit_id),
+                        str(amount),
+                        (note or "").strip(),
+                    ]
+                )
+            )
+        raw = "\n".join(parts).encode("utf-8")
+        return hashlib.sha256(raw).hexdigest()

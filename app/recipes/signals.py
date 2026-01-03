@@ -29,12 +29,22 @@ def _recipe_deleted(sender, instance: Recipe, **kwargs):
 def _recipe_ingredient_saved(sender, instance: RecipeIngredient, created: bool, raw: bool, **kwargs):
     if raw:
         return
-    transaction.on_commit(lambda: upsert_recipe(instance.recipe_id))
+
+    def _on_commit() -> None:
+        Recipe.objects.filter(pk=instance.recipe_id).update(nutrition_dirty=True)
+        upsert_recipe(instance.recipe_id)
+
+    transaction.on_commit(_on_commit)
 
 
 @receiver(post_delete, sender=RecipeIngredient)
 def _recipe_ingredient_deleted(sender, instance: RecipeIngredient, **kwargs):
-    transaction.on_commit(lambda: upsert_recipe(instance.recipe_id))
+
+    def _on_commit() -> None:
+        Recipe.objects.filter(pk=instance.recipe_id).update(nutrition_dirty=True)
+        upsert_recipe(instance.recipe_id)
+
+    transaction.on_commit(_on_commit)
 
 
 def _reindex_on_m2m_change(instance: Recipe, action: str) -> None:

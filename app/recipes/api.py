@@ -394,6 +394,8 @@ def get_recipe_detail(request, slug: str):
         description=recipe.description or None,
         note=getattr(recipe, "note", "") or None,
         video_url=recipe.video_url or None,
+        nutrition=getattr(recipe, "nutrition", None),
+        nutrition_updated_at=getattr(recipe, "nutrition_updated_at", None),
         categories=[_simple_lookup(cat) for cat in recipe.categories.all()],
         meal_types=[_simple_lookup(mt) for mt in recipe.meal_types.all()],
         cuisines=[_simple_lookup(cuisine)

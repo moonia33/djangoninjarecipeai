@@ -95,6 +95,8 @@ class RecipeDetailSchema(RecipeSummarySchema):
     description: Optional[str] = None
     note: Optional[str] = None
     video_url: Optional[str] = None
+    nutrition: Optional[dict] = None
+    nutrition_updated_at: Optional[datetime] = None
     categories: list[SimpleLookupSchema]
     meal_types: list[SimpleLookupSchema]
     cuisines: list[SimpleLookupSchema]
