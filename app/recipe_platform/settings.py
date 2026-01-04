@@ -192,6 +192,7 @@ COMMENT_NOTIFICATION_RECIPIENTS = env.list(
 # OpenAI (AI generation, nutrition)
 OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
 OPENAI_NUTRITION_MODEL = env("OPENAI_NUTRITION_MODEL", default="gpt-4o-mini")
+OPENAI_META_MODEL = env("OPENAI_META_MODEL", default="gpt-4o-mini")
 OPENAI_REQUEST_TIMEOUT_SECONDS = env.int("OPENAI_REQUEST_TIMEOUT_SECONDS", default=60)
 
 LOGGING = {

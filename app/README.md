@@ -374,7 +374,8 @@ journalctl -u apetitas-nutrition-poll.service -n 100 --no-pager
 
 - `Recipe` modelyje yra laukai: `meta_title` (max 80) ir `meta_description` (max 160).
 - `Recipe.save()` automatiškai užpildo `meta_title = title`, bet senesni įrašai (arba bulk update/importai) gali likti su tuščiais meta laukais.
-- Naktinis job'as **užpildo tik tuščius** (`""` / whitespace) `meta_title` ir `meta_description`, sugeneruodamas reikšmes iš recepto konteksto (pavadinimo, aprašymo, virtuvių, meal type ir ingredientų).
+- Naktinis job'as **užpildo tik tuščius** (`""` / whitespace) `meta_title` ir `meta_description`, sugeneruodamas reikšmes per **OpenAI** iš recepto konteksto (pavadinimo, aprašymo, virtuvių, meal type, kategorijų, tagų, gaminimo būdų ir ingredientų).
+- Naudojamas modelis konfigūruojamas per `.env` `OPENAI_META_MODEL` (default: `gpt-4o-mini`).
 
 Rankinis paleidimas:
 ```bash
