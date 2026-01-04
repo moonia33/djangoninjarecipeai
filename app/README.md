@@ -116,6 +116,12 @@ Dideliems sąrašams (geresnis našumas: paginacija + search) naudok atskirus en
    - `GET /api/recipes/cuisines?search=...&limit=50&offset=0`
    - `GET /api/recipes/meal-types?search=...&limit=50&offset=0`
    - `GET /api/recipes/cooking-methods?search=...&limit=50&offset=0`
+
+Ingredientams (ingredientų picker'iui):
+
+- `GET /api/recipes/ingredient-categories?search=...&limit=50&offset=0&parent_id=...&root_only=true`
+- `GET /api/recipes/ingredients?search=...&limit=50&offset=0&category=<CATEGORY_SLUG>`
+   - `items[].category` grąžina `id/name/slug/parent_id`, kad frontendas galėtų grupuoti pagal kategorijas.
 - Atsakymas:
   ```json
   {

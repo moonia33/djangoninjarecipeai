@@ -64,6 +64,10 @@ class CategoryListResponse(Schema):
     items: list[CategoryFilterSchema]
 
 
+class IngredientCategorySchema(SimpleLookupSchema):
+    parent_id: Optional[int] = None
+
+
 class MeasurementUnitSchema(Schema):
     id: int
     name: str
@@ -74,6 +78,19 @@ class IngredientSchema(Schema):
     id: int
     name: str
     slug: Optional[str] = None
+
+
+class IngredientWithCategorySchema(IngredientSchema):
+    category: IngredientCategorySchema
+
+
+class IngredientQuery(LookupQuery):
+    category: Optional[str] = Field(default=None, description="Ingrediento kategorijos slugas")
+
+
+class IngredientListResponse(Schema):
+    total: int
+    items: list[IngredientWithCategorySchema]
 
 
 class IngredientGroupSchema(Schema):

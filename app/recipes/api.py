@@ -20,6 +20,8 @@ from .models import (
     Comment,
     CookingMethod,
     Cuisine,
+    Ingredient,
+    IngredientCategory,
     MealType,
     Rating,
     Recipe,
@@ -39,7 +41,11 @@ from .schemas import (
     ImageSetSchema,
     ImageVariantSchema,
     IngredientSchema,
+    IngredientCategorySchema,
     IngredientGroupSchema,
+    IngredientListResponse,
+    IngredientQuery,
+    IngredientWithCategorySchema,
     LookupListResponse,
     LookupQuery,
     MeasurementUnitSchema,
@@ -387,6 +393,54 @@ def list_cooking_methods(request, filters: LookupQuery = Query(...)):
         offset=filters.offset,
     )
     return LookupListResponse(total=total, items=[_simple_lookup(m) for m in items])
+
+
+@router.get("/ingredient-categories", response=CategoryListResponse)
+def list_ingredient_categories(request, filters: CategoryQuery = Query(...)):
+    qs = IngredientCategory.objects.all()
+    if filters.parent_id is not None:
+        qs = qs.filter(parent_id=filters.parent_id)
+    elif filters.root_only:
+        qs = qs.filter(parent_id__isnull=True)
+
+    if filters.search:
+        qs = qs.filter(name__icontains=filters.search)
+
+    total = qs.count()
+    batch = list(qs.order_by("name")[filters.offset : filters.offset + filters.limit])
+    items = [
+        CategoryFilterSchema(id=c.id, name=c.name, slug=c.slug, parent_id=c.parent_id)
+        for c in batch
+    ]
+    return CategoryListResponse(total=total, items=items)
+
+
+@router.get("/ingredients", response=IngredientListResponse)
+def list_ingredients(request, filters: IngredientQuery = Query(...)):
+    qs = Ingredient.objects.select_related("category")
+    if filters.category:
+        qs = qs.filter(category__slug=filters.category)
+
+    if filters.search:
+        qs = qs.filter(name__icontains=filters.search)
+
+    total = qs.count()
+    batch = list(qs.order_by("name")[filters.offset : filters.offset + filters.limit])
+    items = [
+        IngredientWithCategorySchema(
+            id=i.id,
+            name=i.name,
+            slug=i.slug,
+            category=IngredientCategorySchema(
+                id=i.category.id,
+                name=i.category.name,
+                slug=i.category.slug,
+                parent_id=i.category.parent_id,
+            ),
+        )
+        for i in batch
+    ]
+    return IngredientListResponse(total=total, items=items)
 
 
 def _annotate_with_ratings(qs):
