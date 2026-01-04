@@ -369,6 +369,35 @@ Patikrinimas:
 systemctl list-timers --all | grep apetitas-nutrition
 journalctl -u apetitas-nutrition-nightly.service -n 100 --no-pager
 journalctl -u apetitas-nutrition-poll.service -n 100 --no-pager
+
+### 13.6 SEO meta (meta_title / meta_description) – naktinis užpildymas
+
+- `Recipe` modelyje yra laukai: `meta_title` (max 80) ir `meta_description` (max 160).
+- `Recipe.save()` automatiškai užpildo `meta_title = title`, bet senesni įrašai (arba bulk update/importai) gali likti su tuščiais meta laukais.
+- Naktinis job'as **užpildo tik tuščius** (`""` / whitespace) `meta_title` ir `meta_description`, sugeneruodamas reikšmes iš recepto konteksto (pavadinimo, aprašymo, virtuvių, meal type ir ingredientų).
+
+Rankinis paleidimas:
+```bash
+poetry run python manage.py fill_missing_recipe_meta --limit=500
+poetry run python manage.py run_recipe_meta_nightly --limit=500
+```
+
+Dry-run (tik statistika, be DB pakeitimų):
+```bash
+poetry run python manage.py run_recipe_meta_nightly --limit=50 --dry-run
+```
+
+Systemd (produkcinis naktinis paleidimas):
+```bash
+sudo cp /home/deploy/backend/app/deploy/systemd/apetitas-meta-nightly.service /etc/systemd/system/
+sudo cp /home/deploy/backend/app/deploy/systemd/apetitas-meta-nightly.timer /etc/systemd/system/
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now apetitas-meta-nightly.timer
+
+systemctl list-timers --all | grep apetitas-meta
+journalctl -u apetitas-meta-nightly.service -n 100 --no-pager
+```
 ```
 
 ## 11. Greta esantys moduliai
