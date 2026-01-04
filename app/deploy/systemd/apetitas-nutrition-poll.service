@@ -1,0 +1,13 @@
+[Unit]
+Description=Apetitas - nutrition batch poll/import
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=deploy
+WorkingDirectory=/home/deploy/backend/app
+ExecStart=/home/deploy/backend/app/.venv/bin/python /home/deploy/backend/app/manage.py poll_recipe_nutrition_batch --max-batches=10
+
+[Install]
+WantedBy=multi-user.target

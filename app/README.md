@@ -64,7 +64,9 @@ Naudingi skriptai: `poetry run python manage.py check`, `poetry run python manag
     "large": { "avif": "...", "webp": "..." }
   }
   ```
-  Visada naudok AVIF prioritetą su WEBP fallback; jei trūksta kurio nors varianto, gausi `null`.
+````
+
+<!-- EOF -->
 - **RecipeSummarySchema** – `images`, `rating_average`, `rating_count`, `tags`, `is_bookmarked`.
 - **RecipeSummarySchema** – taip pat turi `is_generated` (AI sugeneruotas receptas).
 - **RecipeDetailSchema** – pratęsia summary su `note` (tip/pastaba), `categories`, `meal_types`, `cuisines`, `cooking_methods`, `ingredients`, `steps`, `comments`, `user_rating`.
@@ -332,9 +334,42 @@ Komanda, kuri apdoroja job'us ir užpildo `Recipe.nutrition` (pirmai iteracijai 
 poetry run python manage.py process_recipe_nutrition_jobs --limit=20
 ```
 
+Batch režimas (didesniam kiekiui per naktį):
+
+1) Submit batch iš `queued` job'ų:
+
+```bash
+poetry run python manage.py submit_recipe_nutrition_batch --limit=200
+```
+
+2) Poll batch ir importuok rezultatus (kai batch užbaigtas):
+
+```bash
+poetry run python manage.py poll_recipe_nutrition_batch --batch-id <OPENAI_BATCH_ID>
+```
+
+Jei `--batch-id` nenurodai, komanda bandys apdoroti visas `submitted` batch'ų grupes (iki kelių skirtingų batch'ų per vieną paleidimą).
+
 Nutrition JSON grąžina apytikslę maistinę vertę per porciją ir EU14 alergenus. Rekomenduojama UI visada rodyti, kad tai yra apytikslės reikšmės.
 
-Pastaba: Batch API režimą (dideliam kiekiui per naktį) pridėsim atskirai; šiuo metu apdorojimas vyksta tiesiogiai per OpenAI kiekvienam job'ui.
+#### Deploy: automatinis paleidimas per systemd (rekomenduojama)
+
+Repo yra šablonai systemd unit/timer failams (naudojama lokali virtualenv, be Poetry):
+
+```bash
+sudo cp /home/deploy/backend/app/deploy/systemd/apetitas-nutrition-*.service /etc/systemd/system/
+sudo cp /home/deploy/backend/app/deploy/systemd/apetitas-nutrition-*.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now apetitas-nutrition-nightly.timer apetitas-nutrition-poll.timer
+```
+
+Patikrinimas:
+
+```bash
+systemctl list-timers --all | grep apetitas-nutrition
+journalctl -u apetitas-nutrition-nightly.service -n 100 --no-pager
+journalctl -u apetitas-nutrition-poll.service -n 100 --no-pager
+```
 
 ## 11. Greta esantys moduliai
 
@@ -343,3 +378,42 @@ Pastaba: Batch API režimą (dideliam kiekiui per naktį) pridėsim atskirai; š
 - `notifications/` – šablonizuoti el. laiškai ir helperiai (`send_templated_email`).
 
 Turėdami šią informaciją frontendistai gali saugiai naudotis esamu API, žinoti laukų struktūrą bei suprasti kokie automatiniai procesai vyksta be papildomo koordinavimo.
+
+### Frontend: nutrition laukų LT pavadinimai (pavyzdys)
+
+```ts
+export const perServingLt: Record<string, string> = {
+   energy_kcal: 'Energija (kcal)',
+   protein_g: 'Baltymai (g)',
+   fat_g: 'Riebalai (g)',
+   saturated_fat_g: 'Sočiosios riebalų rūgštys (g)',
+   carbs_g: 'Angliavandeniai (g)',
+   sugars_g: 'Cukrūs (g)',
+   fiber_g: 'Skaidulos (g)',
+   salt_g: 'Druska (g)',
+};
+
+export const microsLt: Record<string, string> = {
+   cholesterol_mg: 'Cholesterolis (mg)',
+   potassium_mg: 'Kalis (mg)',
+   calcium_mg: 'Kalcis (mg)',
+   iron_mg: 'Geležis (mg)',
+};
+
+export const allergensLt: Record<string, string> = {
+   gluten: 'Glitimas',
+   crustaceans: 'Vėžiagyviai',
+   eggs: 'Kiaušiniai',
+   fish: 'Žuvis',
+   peanuts: 'Žemės riešutai',
+   soy: 'Soja',
+   milk: 'Pienas',
+   tree_nuts: 'Riešutai',
+   celery: 'Salierai',
+   mustard: 'Garstyčios',
+   sesame: 'Sezamai',
+   sulphites: 'Sulfitai',
+   lupin: 'Lubinai',
+   molluscs: 'Moliuskai',
+};
+```

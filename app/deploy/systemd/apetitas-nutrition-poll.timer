@@ -1,0 +1,10 @@
+[Unit]
+Description=Apetitas - nutrition batch poll timer
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

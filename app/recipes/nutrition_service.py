@@ -128,18 +128,12 @@ def generate_nutrition(recipe: Recipe) -> dict[str, Any]:
     if not getattr(settings, "OPENAI_API_KEY", ""):
         raise RuntimeError("OPENAI_API_KEY nenustatytas")
 
-    inputs = build_inputs(recipe)
     client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
     # Naudojam Chat Completions su JSON objektu; validaciją darom per Pydantic.
+    req = build_openai_chat_request(recipe=recipe)
     resp = client.chat.completions.create(
-        model=getattr(settings, "OPENAI_NUTRITION_MODEL", "gpt-4o-mini"),
-        messages=[
-            {"role": "system", "content": _system_prompt()},
-            {"role": "user", "content": _user_prompt(inputs)},
-        ],
-        response_format={"type": "json_object"},
-        temperature=0.2,
+        **req,
         timeout=getattr(settings, "OPENAI_REQUEST_TIMEOUT_SECONDS", 60),
     )
 
@@ -147,12 +141,30 @@ def generate_nutrition(recipe: Recipe) -> dict[str, Any]:
     if not content:
         raise RuntimeError("OpenAI grąžino tuščią atsakymą")
 
+    return parse_openai_chat_content_to_nutrition(content=content, servings=recipe.servings)
+
+
+def build_openai_chat_request(*, recipe: Recipe) -> dict[str, Any]:
+    """Sukonstruoja OpenAI Chat Completions request body (naudojama tiek sync, tiek Batch)."""
+
+    inputs = build_inputs(recipe)
+    return {
+        "model": getattr(settings, "OPENAI_NUTRITION_MODEL", "gpt-4o-mini"),
+        "messages": [
+            {"role": "system", "content": _system_prompt()},
+            {"role": "user", "content": _user_prompt(inputs)},
+        ],
+        "response_format": {"type": "json_object"},
+        "temperature": 0.2,
+    }
+
+
+def parse_openai_chat_content_to_nutrition(*, content: str, servings: int) -> dict[str, Any]:
     data = json.loads(content)
     parsed = NutritionResult.model_validate(data)
-
     result = parsed.model_dump()
     result["computed_at"] = timezone.now().isoformat()
-    result["servings"] = inputs.servings
+    result["servings"] = servings
     return result
 
 

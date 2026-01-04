@@ -513,6 +513,7 @@ class Comment(TimeStampedModel):
 
 class RecipeNutritionJobStatus(models.TextChoices):
     QUEUED = "queued", "Eilėje"
+    SUBMITTED = "submitted", "Pateikta (batch)"
     RUNNING = "running", "Vykdoma"
     SUCCEEDED = "succeeded", "Pavyko"
     FAILED = "failed", "Nepavyko"
@@ -532,6 +533,8 @@ class RecipeNutritionJob(TimeStampedModel):
         default=RecipeNutritionJobStatus.QUEUED,
     )
     input_hash = models.CharField(max_length=64)
+    openai_batch_id = models.CharField(max_length=100, blank=True, default="")
+    openai_batch_submitted_at = models.DateTimeField(null=True, blank=True)
     result = models.JSONField(null=True, blank=True)
     error = models.TextField(blank=True)
     started_at = models.DateTimeField(null=True, blank=True)

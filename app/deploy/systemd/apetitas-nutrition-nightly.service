@@ -1,0 +1,14 @@
+[Unit]
+Description=Apetitas - nutrition nightly (enqueue + submit batch)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=deploy
+WorkingDirectory=/home/deploy/backend/app
+ExecStart=/home/deploy/backend/app/.venv/bin/python /home/deploy/backend/app/manage.py run_recipe_nutrition_nightly --limit=200 --completion-window=24h
+# Log to journald (view via: journalctl -u apetitas-nutrition-nightly.service)
+
+[Install]
+WantedBy=multi-user.target
