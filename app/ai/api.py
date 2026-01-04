@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from django.views.decorators.csrf import csrf_protect
 from ninja import Router
 from ninja.errors import HttpError
