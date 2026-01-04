@@ -418,7 +418,7 @@ poetry run python manage.py process_recipe_generation_jobs --limit=10
    - Sukuriami `RecipeStep` su `description` (Markdown) ir `note` (nebūtina).
    - Ingredientai map’inami į esamus `Ingredient`; nerasti – arba kuriami nauji (jei pasirinkta), arba paliekami kaip tekstinė pastaba ingredientų eilutėje.
 
-MVP pastaba: kol kas ingredientai įrašomi į `Recipe.description` Markdown sekcijoje `## Ingredientai` (kad frontendui nereikėtų laukti pilno struktūrizavimo į `RecipeIngredient`).
+MVP pastaba: ingredientai įrašomi kaip `RecipeIngredient` (su amount+unit), kad frontendui veiktų normalus ingredientų sąrašas.
 
 ### 13.2 Vaizdas (atskirai nuo MVP)
 

@@ -22,10 +22,20 @@ class GeneratedStep(BaseModel):
     duration: int | None = Field(default=None, ge=0)
 
 
+class GeneratedIngredient(BaseModel):
+    name: str = Field(..., min_length=1)
+    amount: float | str | int = Field(..., description="Number (supports int/float/string)")
+    unit: str = Field(..., min_length=1, description="MeasurementUnit.short_name (e.g. g, ml, vnt)")
+    note: str | None = None
+
+
 class GeneratedRecipe(BaseModel):
     title: str = Field(..., min_length=1)
     description: str = Field(..., min_length=1, description="Markdown")
-    ingredients: list[str] = Field(default_factory=list, description="Markdown bullet lines without leading section title")
+    ingredients: list[GeneratedIngredient] = Field(
+        default_factory=list,
+        description="Structured ingredients for DB persistence",
+    )
     steps: list[GeneratedStep]
 
     preparation_time: int = Field(..., ge=0)
@@ -38,12 +48,22 @@ class GeneratedRecipe(BaseModel):
     @field_validator("ingredients", mode="before")
     @classmethod
     def _normalize_ingredients(cls, value):
+        # Backward-compat: if model returns a list of strings, keep them as notes.
         if value is None:
             return []
         if isinstance(value, str):
-            # Accept a single markdown block and split lines
             lines = [ln.strip() for ln in value.splitlines()]
-            return [ln.lstrip("- ").strip() for ln in lines if ln.strip()]
+            lines = [ln.lstrip("- ").strip() for ln in lines if ln.strip()]
+            return [
+                {"name": line, "amount": 1, "unit": "vnt", "note": ""}
+                for line in lines
+            ]
+        if isinstance(value, list) and value and all(isinstance(x, str) for x in value):
+            return [
+                {"name": x, "amount": 1, "unit": "vnt", "note": ""}
+                for x in value
+                if str(x).strip()
+            ]
         return value
 
 
@@ -67,7 +87,8 @@ def _system_prompt() -> str:
         "Taisyklės:\n"
         "- 'exclude' yra GRIEŽTI draudimai: negali pasirodyti nei ingredientuose, nei žingsniuose (nei sinonimais).\n"
         "- Ingredientų sąrašas turi būti realistiškas; galima siūlyti papildomų ingredientų, jei vartotojas gali nupirkti.\n"
-        "- 'ingredients' grąžink kaip sąrašą trumpų eilučių (be skyriaus antraštės), skirtų atvaizduoti bullet list.\n"
+        "- 'ingredients' grąžink kaip struktūrizuotą sąrašą objektų su (name, amount, unit, note).\n"
+        "  - 'unit' turi būti trumpinys (MeasurementUnit.short_name), pvz: g, kg, ml, l, vnt.\n"
         "- 'description' ir 'note' yra Markdown.\n"
         "- 'difficulty' privalo būti vienas iš: easy, medium, hard.\n"
     )
@@ -88,7 +109,7 @@ def _user_prompt(inputs: GenerationInputs) -> str:
         "{\n"
         '  "title": "...",\n'
         '  "description": "... (Markdown)",\n'
-        '  "ingredients": ["...", "..."],\n'
+        '  "ingredients": [{"name": "...", "amount": 100, "unit": "g", "note": ""}],\n'
         '  "steps": [{"order": 1, "title": "...", "description": "... (Markdown)", "duration": 10}],\n'
         '  "preparation_time": 10,\n'
         '  "cooking_time": 20,\n'
