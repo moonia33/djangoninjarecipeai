@@ -288,6 +288,14 @@ Jei kokio nors šablono nėra arba jis išjungtas, loguose matysime įspėjimą,
    - `GET /api/recipes/{slug}` detalėje gali atsirasti `nutrition` ir `nutrition_updated_at` (kol kas `null`, kol job'ai neapdoroti).
    - Pridėtas `RecipeNutritionJob` ir komanda `enqueue_recipe_nutrition_jobs` naktiniam job'ų suformavimui.
 
+### 2026-01-04
+
+- **AI / hero paveikslo job'ai**
+   - Pridėtas `RecipeImageJob` (atskirai nuo recepto generavimo), kad paveikslas gali būti sugeneruotas vėliau.
+   - Nauji endpointai: `POST /api/ai/recipe-image-jobs`, `GET /api/ai/recipe-image-jobs/{id}`.
+   - Naujos komandos: `enqueue_recipe_image_jobs`, `process_recipe_image_jobs`, `run_recipe_image_nightly`.
+   - Nauji `.env` kintamieji: `OPENAI_IMAGE_MODEL`, `OPENAI_IMAGE_SIZE`.
+
 ### 2026-01-02
 
 - **Auth / slaptažodžio atkūrimas**
@@ -424,6 +432,23 @@ MVP pastaba: ingredientai įrašomi kaip `RecipeIngredient` (su amount+unit), ka
 
 - Vaizdo generavimą verta daryti kaip **antrą job’ą** (pvz. `RecipeImageJob`), kad receptas atsirastų greitai, o hero paveikslas „prisikabintų“ vėliau.
 - Sugeneruotas failas įkeliamas į R2 per esamą storage; tada suveikia įprasta image variantų grandinė.
+
+Backend palaiko atskirą paveikslo job'ą:
+
+- `POST /api/ai/recipe-image-jobs` (CSRF + prisijungęs) – sukuria job'ą konkrečiam AI receptui.
+   - Payload: `{ "recipe_id": 123 }` arba `{ "recipe_slug": "..." }`
+- `GET /api/ai/recipe-image-jobs/{id}` (prisijungęs) – poll'inamas statusas.
+
+Rankinis paleidimas ("batch" per naktį = paleisti komandas cron/systemd, neblokuojant UI):
+
+```bash
+poetry run python manage.py enqueue_recipe_image_jobs --limit=200
+poetry run python manage.py process_recipe_image_jobs --limit=20
+```
+
+Konfigūracija per `.env`:
+- `OPENAI_IMAGE_MODEL` (default: `gpt-image-1`)
+- `OPENAI_IMAGE_SIZE` (default: `1024x1024`)
 
 ### 13.3 Kokybė, sauga ir moderavimas
 

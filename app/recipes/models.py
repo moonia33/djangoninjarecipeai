@@ -570,3 +570,44 @@ class RecipeNutritionJob(TimeStampedModel):
             )
         raw = "\n".join(parts).encode("utf-8")
         return hashlib.sha256(raw).hexdigest()
+
+
+class RecipeImageJobStatus(models.TextChoices):
+    QUEUED = "queued", "Eilėje"
+    RUNNING = "running", "Vykdoma"
+    SUCCEEDED = "succeeded", "Pavyko"
+    FAILED = "failed", "Nepavyko"
+
+
+class RecipeImageJob(TimeStampedModel):
+    """Asinchroninis hero paveikslo generavimo job'as."""
+
+    recipe = models.ForeignKey(
+        Recipe,
+        related_name="image_jobs",
+        on_delete=models.CASCADE,
+    )
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="recipe_image_jobs",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=RecipeImageJobStatus.choices,
+        default=RecipeImageJobStatus.QUEUED,
+    )
+    prompt = models.TextField(blank=True)
+    result_image_url = models.URLField(blank=True)
+    error = models.TextField(blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "created_at"]),
+            models.Index(fields=["recipe", "status", "created_at"]),
+        ]

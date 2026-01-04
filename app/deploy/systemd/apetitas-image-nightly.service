@@ -1,0 +1,14 @@
+[Unit]
+Description=Apetitas - image nightly (enqueue + process)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=deploy
+WorkingDirectory=/home/deploy/backend/app
+ExecStart=/home/deploy/backend/app/.venv/bin/python /home/deploy/backend/app/manage.py run_recipe_image_nightly --enqueue-limit=200 --process-limit=20
+# Log to journald (view via: journalctl -u apetitas-image-nightly.service)
+
+[Install]
+WantedBy=multi-user.target

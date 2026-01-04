@@ -40,3 +40,24 @@ class RecipeGenerationJobStatusSchema(Schema):
     result_recipe_slug: Optional[str] = None
 
     error: Optional[str] = None
+
+
+class RecipeImageJobCreateRequestSchema(Schema):
+    recipe_id: Optional[int] = None
+    recipe_slug: Optional[str] = None
+
+
+class RecipeImageJobCreatedSchema(Schema):
+    id: int
+    status: str
+
+
+class RecipeImageJobStatusSchema(Schema):
+    id: int
+    status: str
+    recipe_id: int
+    recipe_slug: str
+    created_at: datetime
+    started_at: Optional[datetime] = None
+    finished_at: Optional[datetime] = None
+    error: Optional[str] = None
