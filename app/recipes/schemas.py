@@ -25,6 +25,45 @@ class SimpleLookupSchema(Schema):
     slug: Optional[str] = None
 
 
+class CategoryFilterSchema(SimpleLookupSchema):
+    parent_id: Optional[int] = None
+
+
+class DifficultyOptionSchema(Schema):
+    key: str
+    label: str
+
+
+class RecipeFilterOptionsSchema(Schema):
+    """Lengvi filtrų pasirinkimai (be didelių kolekcijų kaip categories/tags)."""
+
+    cuisines: list[SimpleLookupSchema]
+    meal_types: list[SimpleLookupSchema]
+    cooking_methods: list[SimpleLookupSchema]
+    difficulties: list[DifficultyOptionSchema]
+
+
+class LookupQuery(Schema):
+    search: Optional[str] = Field(default=None, description="Paieška pagal pavadinimą")
+    limit: int = Field(default=50, ge=1, le=200)
+    offset: int = Field(default=0, ge=0)
+
+
+class CategoryQuery(LookupQuery):
+    parent_id: Optional[int] = Field(default=None, description="Filtruoti pagal parent_id")
+    root_only: bool = Field(default=False, description="Jei true – tik root kategorijos (parent_id IS NULL)")
+
+
+class LookupListResponse(Schema):
+    total: int
+    items: list[SimpleLookupSchema]
+
+
+class CategoryListResponse(Schema):
+    total: int
+    items: list[CategoryFilterSchema]
+
+
 class MeasurementUnitSchema(Schema):
     id: int
     name: str

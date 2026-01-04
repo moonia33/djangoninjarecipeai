@@ -95,6 +95,27 @@ Laukų struktūrą apibrėžia `sitecontent/schemas.py`. Visos vizualios reikšm
 - `limit` 1..100, `offset` 0..N.
 - `search` ieško `title`, `description`.
 - Kiti filtrai naudoja susijusių objektų slugus.
+
+Filtrų pasirinkimų sąrašai (kad frontendas galėtų susirinkti dropdown'us):
+
+Lengvi (maži) filtrai vienu request'u:
+
+`GET /api/recipes/filters`
+
+Grąžina:
+- `cuisines[]` (id, name, slug)
+- `meal_types[]` (id, name, slug)
+- `cooking_methods[]` (id, name, slug)
+- `difficulties[]` (key, label)
+
+Dideliems sąrašams (geresnis našumas: paginacija + search) naudok atskirus endpointus:
+
+- `GET /api/recipes/categories?search=...&limit=50&offset=0&parent_id=...&root_only=true`
+- `GET /api/recipes/tags?search=...&limit=50&offset=0`
+- (papildomai, jei reikia paginuoti ir kitus):
+   - `GET /api/recipes/cuisines?search=...&limit=50&offset=0`
+   - `GET /api/recipes/meal-types?search=...&limit=50&offset=0`
+   - `GET /api/recipes/cooking-methods?search=...&limit=50&offset=0`
 - Atsakymas:
   ```json
   {

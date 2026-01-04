@@ -15,16 +15,35 @@ from ninja.errors import HttpError
 
 from notifications.services import EmailTemplateNotFound, send_templated_email
 
-from .models import Bookmark, Comment, Rating, Recipe, RecipeIngredient, RecipeStep
+from .models import (
+    Bookmark,
+    Comment,
+    CookingMethod,
+    Cuisine,
+    MealType,
+    Rating,
+    Recipe,
+    RecipeCategory,
+    RecipeIngredient,
+    RecipeStep,
+    Tag,
+    Difficulty,
+)
 from .schemas import (
     BookmarkToggleSchema,
+    CategoryListResponse,
+    CategoryQuery,
     CommentCreateSchema,
     CommentSchema,
+    DifficultyOptionSchema,
     ImageSetSchema,
     ImageVariantSchema,
     IngredientSchema,
     IngredientGroupSchema,
+    LookupListResponse,
+    LookupQuery,
     MeasurementUnitSchema,
+    RecipeFilterOptionsSchema,
     RecipeDetailSchema,
     RecipeFilters,
     RecipeIngredientSchema,
@@ -34,6 +53,7 @@ from .schemas import (
     RatingCreateSchema,
     RatingSchema,
     SimpleLookupSchema,
+    CategoryFilterSchema,
 )
 from .upstash_search import search_recipe_ids
 
@@ -266,6 +286,107 @@ def _prefetch_for_detail(qs):
         Prefetch("comments", queryset=Comment.objects.select_related(
             "user").order_by("-created_at")),
     )
+
+
+@router.get("/filters", response=RecipeFilterOptionsSchema)
+def get_filter_options(request):
+    """Frontendui: grąžina visus galimus filtrų pasirinkimus vienu request'u."""
+
+    cuisines = [SimpleLookupSchema(id=c.id, name=c.name, slug=c.slug) for c in Cuisine.objects.order_by("name")]
+    meal_types = [
+        SimpleLookupSchema(id=m.id, name=m.name, slug=m.slug) for m in MealType.objects.order_by("name")
+    ]
+    cooking_methods = [
+        SimpleLookupSchema(id=m.id, name=m.name, slug=m.slug)
+        for m in CookingMethod.objects.order_by("name")
+    ]
+    difficulties = [
+        DifficultyOptionSchema(key=key, label=label)
+        for key, label in Difficulty.choices
+    ]
+
+    return RecipeFilterOptionsSchema(
+        cuisines=cuisines,
+        meal_types=meal_types,
+        cooking_methods=cooking_methods,
+        difficulties=difficulties,
+    )
+
+
+def _paginate_lookup_queryset(qs, *, search: str | None, limit: int, offset: int):
+    if search:
+        qs = qs.filter(name__icontains=search)
+    total = qs.count()
+    items = list(qs.order_by("name")[offset : offset + limit])
+    return total, items
+
+
+@router.get("/tags", response=LookupListResponse)
+def list_tags(request, filters: LookupQuery = Query(...)):
+    qs = Tag.objects.all()
+    total, items = _paginate_lookup_queryset(
+        qs,
+        search=filters.search,
+        limit=filters.limit,
+        offset=filters.offset,
+    )
+    return LookupListResponse(total=total, items=[_simple_lookup(t) for t in items])
+
+
+@router.get("/categories", response=CategoryListResponse)
+def list_categories(request, filters: CategoryQuery = Query(...)):
+    qs = RecipeCategory.objects.all()
+    if filters.parent_id is not None:
+        qs = qs.filter(parent_id=filters.parent_id)
+    elif filters.root_only:
+        qs = qs.filter(parent_id__isnull=True)
+
+    if filters.search:
+        qs = qs.filter(name__icontains=filters.search)
+
+    total = qs.count()
+    batch = list(qs.order_by("name")[filters.offset : filters.offset + filters.limit])
+    items = [
+        CategoryFilterSchema(id=c.id, name=c.name, slug=c.slug, parent_id=c.parent_id)
+        for c in batch
+    ]
+    return CategoryListResponse(total=total, items=items)
+
+
+@router.get("/cuisines", response=LookupListResponse)
+def list_cuisines(request, filters: LookupQuery = Query(...)):
+    qs = Cuisine.objects.all()
+    total, items = _paginate_lookup_queryset(
+        qs,
+        search=filters.search,
+        limit=filters.limit,
+        offset=filters.offset,
+    )
+    return LookupListResponse(total=total, items=[_simple_lookup(c) for c in items])
+
+
+@router.get("/meal-types", response=LookupListResponse)
+def list_meal_types(request, filters: LookupQuery = Query(...)):
+    qs = MealType.objects.all()
+    total, items = _paginate_lookup_queryset(
+        qs,
+        search=filters.search,
+        limit=filters.limit,
+        offset=filters.offset,
+    )
+    return LookupListResponse(total=total, items=[_simple_lookup(m) for m in items])
+
+
+@router.get("/cooking-methods", response=LookupListResponse)
+def list_cooking_methods(request, filters: LookupQuery = Query(...)):
+    qs = CookingMethod.objects.all()
+    total, items = _paginate_lookup_queryset(
+        qs,
+        search=filters.search,
+        limit=filters.limit,
+        offset=filters.offset,
+    )
+    return LookupListResponse(total=total, items=[_simple_lookup(m) for m in items])
 
 
 def _annotate_with_ratings(qs):
