@@ -54,6 +54,7 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     "accounts.apps.AccountsConfig",
     "recipes.apps.RecipesConfig",
+    "ai.apps.AiConfig",
     "notifications",
     "sitecontent",
 ]
@@ -193,6 +194,7 @@ COMMENT_NOTIFICATION_RECIPIENTS = env.list(
 OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
 OPENAI_NUTRITION_MODEL = env("OPENAI_NUTRITION_MODEL", default="gpt-4o-mini")
 OPENAI_META_MODEL = env("OPENAI_META_MODEL", default="gpt-4o-mini")
+OPENAI_RECIPE_MODEL = env("OPENAI_RECIPE_MODEL", default="gpt-4o-mini")
 OPENAI_REQUEST_TIMEOUT_SECONDS = env.int("OPENAI_REQUEST_TIMEOUT_SECONDS", default=60)
 
 LOGGING = {

@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from ninja import NinjaAPI
 
+from ai.api import router as ai_router
 from accounts.api import router as accounts_router
 from recipes.api import router as recipes_router
 from sitecontent.api import router as sitecontent_router
@@ -26,4 +27,5 @@ api = NinjaAPI(
 
 api.add_router("/sitecontent", sitecontent_router)
 api.add_router("/recipes", recipes_router)
+api.add_router("/ai", ai_router)
 api.add_router("/auth", accounts_router)
