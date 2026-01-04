@@ -391,6 +391,8 @@ def get_recipe_detail(request, slug: str):
 
     return RecipeDetailSchema(
         **summary_data,
+        meta_title=recipe.meta_title or None,
+        meta_description=recipe.meta_description or None,
         description=recipe.description or None,
         note=getattr(recipe, "note", "") or None,
         video_url=recipe.video_url or None,

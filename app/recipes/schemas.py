@@ -92,6 +92,8 @@ class RecipeSummarySchema(Schema):
 
 
 class RecipeDetailSchema(RecipeSummarySchema):
+    meta_title: Optional[str] = None
+    meta_description: Optional[str] = None
     description: Optional[str] = None
     note: Optional[str] = None
     video_url: Optional[str] = None

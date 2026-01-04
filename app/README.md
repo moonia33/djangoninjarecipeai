@@ -71,6 +71,7 @@ Naudingi skriptai: `poetry run python manage.py check`, `poetry run python manag
 - **RecipeSummarySchema** – taip pat turi `is_generated` (AI sugeneruotas receptas).
 - **RecipeDetailSchema** – pratęsia summary su `note` (tip/pastaba), `categories`, `meal_types`, `cuisines`, `cooking_methods`, `ingredients`, `steps`, `comments`, `user_rating`.
    - Taip pat gali turėti `nutrition` (JSON su maistine verte) ir `nutrition_updated_at` (kada paskutinį kartą perskaičiuota).
+   - Taip pat grąžina `meta_title` ir `meta_description` (SEO; naudojama frontendo `<title>` ir `<meta name="description">`).
 - **CommentSchema** – `is_approved` nurodo ar komentaras viešas. Jei komentarą išsiuntė pats prisijungęs naudotojas, jis matys jį net ir kol nepatvirtintas.
 
 ## 5. API endpointai
