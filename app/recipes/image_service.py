@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import urllib.request
 from dataclasses import dataclass
 
 from django.conf import settings
@@ -52,17 +53,43 @@ def generate_recipe_image(*, prompt: str) -> GeneratedImage:
         raise RuntimeError("OPENAI_API_KEY nenustatytas")
 
     model = getattr(settings, "OPENAI_IMAGE_MODEL", "gpt-image-1")
+    fallback_model = getattr(settings, "OPENAI_IMAGE_FALLBACK_MODEL", "dall-e-3")
     size = getattr(settings, "OPENAI_IMAGE_SIZE", "1024x1024")
 
     client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
-    # Prefer base64 output so we can store it directly to our storage.
-    resp = client.images.generate(
-        model=model,
-        prompt=prompt,
-        size=size,
-        response_format="b64_json",
-    )
+    def _call_images_generate(*, use_model: str):
+        # OpenAI Images API parameter support varies by model/version.
+        # Try b64 first (when supported) and gracefully retry without it.
+        try:
+            return client.images.generate(
+                model=use_model,
+                prompt=prompt,
+                size=size,
+                response_format="b64_json",
+            )
+        except Exception as exc:
+            msg = str(exc)
+            if "Unknown parameter" in msg and "response_format" in msg:
+                return client.images.generate(
+                    model=use_model,
+                    prompt=prompt,
+                    size=size,
+                )
+            raise
+
+    try:
+        resp = _call_images_generate(use_model=model)
+    except Exception as exc:
+        msg = str(exc)
+        # Common blocker: org verification required for gpt-image-1.
+        if (
+            "must be verified" in msg.lower()
+            or "organization" in msg.lower() and "verified" in msg.lower()
+        ) and fallback_model and fallback_model != model:
+            resp = _call_images_generate(use_model=fallback_model)
+        else:
+            raise
 
     data0 = getattr(resp, "data", None)
     if not data0:
@@ -70,12 +97,20 @@ def generate_recipe_image(*, prompt: str) -> GeneratedImage:
 
     first = data0[0]
     b64 = getattr(first, "b64_json", None) or (first.get("b64_json") if isinstance(first, dict) else None)
-    if not b64:
-        raise RuntimeError("OpenAI image atsakymas neturi b64_json")
+    if b64:
+        try:
+            content = base64.b64decode(b64)
+        except Exception as exc:  # pragma: no cover
+            raise RuntimeError(f"Nepavyko dekoduoti b64: {exc}") from exc
+        return GeneratedImage(content=content, content_type="image/png")
 
-    try:
-        content = base64.b64decode(b64)
-    except Exception as exc:  # pragma: no cover
-        raise RuntimeError(f"Nepavyko dekoduoti b64: {exc}") from exc
+    url = getattr(first, "url", None) or (first.get("url") if isinstance(first, dict) else None)
+    if url:
+        try:
+            with urllib.request.urlopen(url, timeout=60) as resp2:
+                content = resp2.read()
+        except Exception as exc:
+            raise RuntimeError(f"Nepavyko parsisiųsti vaizdo iš url: {exc}") from exc
+        return GeneratedImage(content=content, content_type="image/png")
 
-    return GeneratedImage(content=content, content_type="image/png")
+    raise RuntimeError("OpenAI image atsakymas neturi nei b64_json, nei url")

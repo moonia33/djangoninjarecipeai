@@ -448,6 +448,7 @@ poetry run python manage.py process_recipe_image_jobs --limit=20
 
 Konfigūracija per `.env`:
 - `OPENAI_IMAGE_MODEL` (default: `gpt-image-1`)
+- `OPENAI_IMAGE_FALLBACK_MODEL` (default: `dall-e-3`) – jei pagrindinis modelis nepasiekiamas (pvz. reikia org verifikacijos)
 - `OPENAI_IMAGE_SIZE` (default: `1024x1024`)
 
 ### 13.3 Kokybė, sauga ir moderavimas
